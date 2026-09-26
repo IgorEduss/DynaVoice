@@ -1,0 +1,11 @@
+﻿nome,sessao_id,articulacao,movimento,lado,tentativas,media_kgf,pico_kgf
+Carlos Mendes,1,Joelho,Flexão,Direito,2,33.2,34.0
+Carlos Mendes,1,Joelho,Flexão,Esquerdo,1,30.0,30.0
+Carlos Mendes,1,Joelho,Extensão,Direito,1,42.0,42.0
+Carlos Mendes,2,Joelho,Flexão,Direito,2,37.0,38.0
+Carlos Mendes,2,Joelho,Flexão,Esquerdo,1,35.0,35.0
+Carlos Mendes,2,Joelho,Extensão,Direito,1,45.0,45.0
+Ana Beatriz,3,Ombro,Abdução,Direito,1,20.0,20.0
+Ana Beatriz,3,Ombro,Abdução,Esquerdo,1,18.0,18.0
+Ricardo Ferreira,4,Quadril,Adução,Direito,1,25.7,25.7
+Ricardo Ferreira,4,Quadril,Adução,Esquerdo,1,24.5,24.5

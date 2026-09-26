@@ -1,0 +1,13 @@
+﻿nome,sessao_id,articulacao,movimento,lado,forca_kgf,registrada_em,origem
+Carlos Mendes,1,Joelho,Flexão,Direito,32.4,2026-09-10T09:05:00Z,simulacao
+Carlos Mendes,1,Joelho,Flexão,Direito,34.0,2026-09-10T09:06:00Z,simulacao
+Carlos Mendes,1,Joelho,Flexão,Esquerdo,30.0,2026-09-10T09:07:00Z,simulacao
+Carlos Mendes,1,Joelho,Extensão,Direito,42.0,2026-09-10T09:10:00Z,simulacao
+Carlos Mendes,2,Joelho,Flexão,Direito,36.0,2026-09-20T09:05:00Z,simulacao
+Carlos Mendes,2,Joelho,Flexão,Direito,38.0,2026-09-20T09:06:00Z,simulacao
+Carlos Mendes,2,Joelho,Flexão,Esquerdo,35.0,2026-09-20T09:07:00Z,simulacao
+Carlos Mendes,2,Joelho,Extensão,Direito,45.0,2026-09-20T09:10:00Z,simulacao
+Ana Beatriz,3,Ombro,Abdução,Direito,20.0,2026-09-20T10:05:00Z,simulacao
+Ana Beatriz,3,Ombro,Abdução,Esquerdo,18.0,2026-09-20T10:06:00Z,simulacao
+Ricardo Ferreira,4,Quadril,Adução,Direito,25.7,2026-09-21T11:05:00Z,simulacao
+Ricardo Ferreira,4,Quadril,Adução,Esquerdo,24.5,2026-09-21T11:06:00Z,simulacao

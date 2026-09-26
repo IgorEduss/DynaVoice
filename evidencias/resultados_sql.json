@@ -1,0 +1,395 @@
+{
+  "python": "3.12.14",
+  "sqlite": "3.53.1",
+  "testes": [
+    {
+      "teste": "FK ativada",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Quantidade paciente",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Quantidade sessao",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Quantidade avaliacao",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Quantidade medicao",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "PK duplicada",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Nome obrigatório",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Nome vazio",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Data inválida",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Sessão sem paciente",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Avaliação sem sessão",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Medição sem avaliação",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Avaliação duplicada",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Força negativa",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Força textual",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Lado inválido",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Origem inválida",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Encerramento anterior ao início",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Evolução do pico de flexão direita: 34 para 38 kgf",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Média da primeira avaliação direita: 33,2 kgf",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Sem violações referenciais",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Integridade física do banco",
+      "resultado": "PASSOU"
+    },
+    {
+      "teste": "Persistência após reabrir",
+      "resultado": "PASSOU"
+    }
+  ],
+  "consultas": {
+    "Q1": [
+      {
+        "nome": "Carlos Mendes",
+        "sessao_id": 1,
+        "articulacao": "Joelho",
+        "movimento": "Flexão",
+        "lado": "Direito",
+        "forca_kgf": 32.4,
+        "registrada_em": "2026-09-10T09:05:00Z",
+        "origem": "simulacao"
+      },
+      {
+        "nome": "Carlos Mendes",
+        "sessao_id": 1,
+        "articulacao": "Joelho",
+        "movimento": "Flexão",
+        "lado": "Direito",
+        "forca_kgf": 34.0,
+        "registrada_em": "2026-09-10T09:06:00Z",
+        "origem": "simulacao"
+      },
+      {
+        "nome": "Carlos Mendes",
+        "sessao_id": 1,
+        "articulacao": "Joelho",
+        "movimento": "Flexão",
+        "lado": "Esquerdo",
+        "forca_kgf": 30.0,
+        "registrada_em": "2026-09-10T09:07:00Z",
+        "origem": "simulacao"
+      },
+      {
+        "nome": "Carlos Mendes",
+        "sessao_id": 1,
+        "articulacao": "Joelho",
+        "movimento": "Extensão",
+        "lado": "Direito",
+        "forca_kgf": 42.0,
+        "registrada_em": "2026-09-10T09:10:00Z",
+        "origem": "simulacao"
+      },
+      {
+        "nome": "Carlos Mendes",
+        "sessao_id": 2,
+        "articulacao": "Joelho",
+        "movimento": "Flexão",
+        "lado": "Direito",
+        "forca_kgf": 36.0,
+        "registrada_em": "2026-09-20T09:05:00Z",
+        "origem": "simulacao"
+      },
+      {
+        "nome": "Carlos Mendes",
+        "sessao_id": 2,
+        "articulacao": "Joelho",
+        "movimento": "Flexão",
+        "lado": "Direito",
+        "forca_kgf": 38.0,
+        "registrada_em": "2026-09-20T09:06:00Z",
+        "origem": "simulacao"
+      },
+      {
+        "nome": "Carlos Mendes",
+        "sessao_id": 2,
+        "articulacao": "Joelho",
+        "movimento": "Flexão",
+        "lado": "Esquerdo",
+        "forca_kgf": 35.0,
+        "registrada_em": "2026-09-20T09:07:00Z",
+        "origem": "simulacao"
+      },
+      {
+        "nome": "Carlos Mendes",
+        "sessao_id": 2,
+        "articulacao": "Joelho",
+        "movimento": "Extensão",
+        "lado": "Direito",
+        "forca_kgf": 45.0,
+        "registrada_em": "2026-09-20T09:10:00Z",
+        "origem": "simulacao"
+      },
+      {
+        "nome": "Ana Beatriz",
+        "sessao_id": 3,
+        "articulacao": "Ombro",
+        "movimento": "Abdução",
+        "lado": "Direito",
+        "forca_kgf": 20.0,
+        "registrada_em": "2026-09-20T10:05:00Z",
+        "origem": "simulacao"
+      },
+      {
+        "nome": "Ana Beatriz",
+        "sessao_id": 3,
+        "articulacao": "Ombro",
+        "movimento": "Abdução",
+        "lado": "Esquerdo",
+        "forca_kgf": 18.0,
+        "registrada_em": "2026-09-20T10:06:00Z",
+        "origem": "simulacao"
+      },
+      {
+        "nome": "Ricardo Ferreira",
+        "sessao_id": 4,
+        "articulacao": "Quadril",
+        "movimento": "Adução",
+        "lado": "Direito",
+        "forca_kgf": 25.7,
+        "registrada_em": "2026-09-21T11:05:00Z",
+        "origem": "simulacao"
+      },
+      {
+        "nome": "Ricardo Ferreira",
+        "sessao_id": 4,
+        "articulacao": "Quadril",
+        "movimento": "Adução",
+        "lado": "Esquerdo",
+        "forca_kgf": 24.5,
+        "registrada_em": "2026-09-21T11:06:00Z",
+        "origem": "simulacao"
+      }
+    ],
+    "Q2": [
+      {
+        "nome": "Carlos Mendes",
+        "sessao_id": 1,
+        "articulacao": "Joelho",
+        "movimento": "Flexão",
+        "lado": "Direito",
+        "tentativas": 2,
+        "media_kgf": 33.2,
+        "pico_kgf": 34.0
+      },
+      {
+        "nome": "Carlos Mendes",
+        "sessao_id": 1,
+        "articulacao": "Joelho",
+        "movimento": "Flexão",
+        "lado": "Esquerdo",
+        "tentativas": 1,
+        "media_kgf": 30.0,
+        "pico_kgf": 30.0
+      },
+      {
+        "nome": "Carlos Mendes",
+        "sessao_id": 1,
+        "articulacao": "Joelho",
+        "movimento": "Extensão",
+        "lado": "Direito",
+        "tentativas": 1,
+        "media_kgf": 42.0,
+        "pico_kgf": 42.0
+      },
+      {
+        "nome": "Carlos Mendes",
+        "sessao_id": 2,
+        "articulacao": "Joelho",
+        "movimento": "Flexão",
+        "lado": "Direito",
+        "tentativas": 2,
+        "media_kgf": 37.0,
+        "pico_kgf": 38.0
+      },
+      {
+        "nome": "Carlos Mendes",
+        "sessao_id": 2,
+        "articulacao": "Joelho",
+        "movimento": "Flexão",
+        "lado": "Esquerdo",
+        "tentativas": 1,
+        "media_kgf": 35.0,
+        "pico_kgf": 35.0
+      },
+      {
+        "nome": "Carlos Mendes",
+        "sessao_id": 2,
+        "articulacao": "Joelho",
+        "movimento": "Extensão",
+        "lado": "Direito",
+        "tentativas": 1,
+        "media_kgf": 45.0,
+        "pico_kgf": 45.0
+      },
+      {
+        "nome": "Ana Beatriz",
+        "sessao_id": 3,
+        "articulacao": "Ombro",
+        "movimento": "Abdução",
+        "lado": "Direito",
+        "tentativas": 1,
+        "media_kgf": 20.0,
+        "pico_kgf": 20.0
+      },
+      {
+        "nome": "Ana Beatriz",
+        "sessao_id": 3,
+        "articulacao": "Ombro",
+        "movimento": "Abdução",
+        "lado": "Esquerdo",
+        "tentativas": 1,
+        "media_kgf": 18.0,
+        "pico_kgf": 18.0
+      },
+      {
+        "nome": "Ricardo Ferreira",
+        "sessao_id": 4,
+        "articulacao": "Quadril",
+        "movimento": "Adução",
+        "lado": "Direito",
+        "tentativas": 1,
+        "media_kgf": 25.7,
+        "pico_kgf": 25.7
+      },
+      {
+        "nome": "Ricardo Ferreira",
+        "sessao_id": 4,
+        "articulacao": "Quadril",
+        "movimento": "Adução",
+        "lado": "Esquerdo",
+        "tentativas": 1,
+        "media_kgf": 24.5,
+        "pico_kgf": 24.5
+      }
+    ],
+    "Q3": [
+      {
+        "iniciada_em": "2026-09-10T09:00:00Z",
+        "pico_kgf": 34.0
+      },
+      {
+        "iniciada_em": "2026-09-20T09:00:00Z",
+        "pico_kgf": 38.0
+      }
+    ],
+    "Q4": [
+      {
+        "id": 1,
+        "nome": "Carlos Mendes",
+        "sessoes": 2
+      },
+      {
+        "id": 2,
+        "nome": "Ana Beatriz",
+        "sessoes": 1
+      },
+      {
+        "id": 3,
+        "nome": "Ricardo Ferreira",
+        "sessoes": 1
+      }
+    ],
+    "Q5": [
+      {
+        "avaliacao_id": 1,
+        "articulacao": "Joelho",
+        "movimento": "Flexão",
+        "pico_direito": 34.0,
+        "pico_esquerdo": 30.0
+      },
+      {
+        "avaliacao_id": 2,
+        "articulacao": "Joelho",
+        "movimento": "Extensão",
+        "pico_direito": 42.0,
+        "pico_esquerdo": null
+      },
+      {
+        "avaliacao_id": 3,
+        "articulacao": "Joelho",
+        "movimento": "Flexão",
+        "pico_direito": 38.0,
+        "pico_esquerdo": 35.0
+      },
+      {
+        "avaliacao_id": 4,
+        "articulacao": "Joelho",
+        "movimento": "Extensão",
+        "pico_direito": 45.0,
+        "pico_esquerdo": null
+      },
+      {
+        "avaliacao_id": 5,
+        "articulacao": "Ombro",
+        "movimento": "Abdução",
+        "pico_direito": 20.0,
+        "pico_esquerdo": 18.0
+      },
+      {
+        "avaliacao_id": 6,
+        "articulacao": "Quadril",
+        "movimento": "Adução",
+        "pico_direito": 25.7,
+        "pico_esquerdo": 24.5
+      }
+    ]
+  }
+}

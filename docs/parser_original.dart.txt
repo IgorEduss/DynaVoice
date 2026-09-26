@@ -1,0 +1,271 @@
+import 'dart:developer' as developer;
+
+/// Classe que modela os dados estruturados de uma aferição de dinamometria.
+/// Serve como entidade relacional clínica para o MVP.
+class DadosAfericao {
+  String paciente;
+  String articulacao;
+  String movimento;
+  String lado;
+  double forca;
+  String textoOriginal;
+
+  DadosAfericao({
+    this.paciente = 'Geral',
+    this.articulacao = '',
+    this.movimento = '',
+    this.lado = '',
+    this.forca = 0.0,
+    this.textoOriginal = '',
+  });
+
+  /// Converte a aferição para um mapa chave-valor para simulação de exportação JSON/CSV.
+  Map<String, dynamic> toJson() {
+    return {
+      'paciente': paciente,
+      'articulação': articulacao,
+      'movimento': movimento,
+      'lado': lado,
+      'força_kgf': forca,
+      'texto_original': textoOriginal,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+  }
+
+  @override
+  String toString() {
+    return 'DadosAfericao(articulação: $articulacao, movimento: $movimento, lado: $lado, força: $forca kgf)';
+  }
+}
+
+/// Serviço de Processamento de Linguagem Natural (NLP) simplificado e baseado em RegEx.
+/// Projetado para execução offline (Edge Computing) em sistemas móveis.
+class ParserService {
+  /// Dicionário para conversão de números escritos por extenso em Português (Brasil).
+  /// Esta estrutura mapeia chaves fonéticas textuais para seus respectivos pesos inteiros,
+  /// permitindo a reconstrução de grandezas decimais por composição aditiva.
+  static const Map<String, int> _palavrasNumericas = {
+    'zero': 0,
+    'um': 1,
+    'uma': 1,
+    'dois': 2,
+    'duas': 2,
+    'três': 3,
+    'tres': 3,
+    'quatro': 4,
+    'cinco': 5,
+    'seis': 6,
+    'sete': 7,
+    'oito': 8,
+    'nove': 9,
+    'dez': 10,
+    'onze': 11,
+    'doze': 12,
+    'treze': 13,
+    'quatorze': 14,
+    'catorze': 14,
+    'quinze': 15,
+    'dezesseis': 16,
+    'dezessete': 17,
+    'dezoito': 18,
+    'dezenove': 19,
+    'vinte': 20,
+    'trinta': 30,
+    'quarenta': 40,
+    'cinquenta': 50,
+    'cinqüenta': 50,
+    'sessenta': 60,
+    'setenta': 70,
+    'oitenta': 80,
+    'noventa': 90,
+    'cem': 100,
+    'cento': 100,
+    'duzentos': 200,
+    'trezentos': 300,
+  };
+
+  /// Lista de separadores decimais fonéticos e literais comuns na fala e na transcrição.
+  static const List<String> _separadoresDecimais = ['vírgula', 'virgula', 'ponto', ',', '.'];
+
+  /// Executa o fluxo de parsing NLP e extração de entidades sobre o texto bruto.
+  /// 
+  /// O algoritmo opera em quatro etapas fundamentais:
+  /// 1. Normalização do texto (conversão para caixa baixa, remoção de acentos/caracteres espúrios).
+  /// 2. Mapeamento de entidades estáticas (Articulação, Lado, Movimento) por correspondência de padrões (substrings/RegEx).
+  /// 3. Identificação e extração do valor numérico (Força) utilizando duas heurísticas concorrentes:
+  ///    a) Busca por dígitos diretos (ex: "18.5" ou "32,4").
+  ///    b) Decodificação de termos consecutivos por extenso (ex: "trinta e dois vírgula quatro").
+  /// 4. Retorno do objeto estruturado pronto para validação visual na UI.
+  static DadosAfericao processarTextoTranscrito(String textoBruto) {
+    // 1. Normalização
+    final String texto = textoBruto.toLowerCase().trim();
+    final dados = DadosAfericao(textoOriginal: textoBruto);
+
+    developer.log('Iniciando parsing do texto: "$texto"', name: 'ParserService');
+
+    // 2. Extração de Entidades Clínicas (Lado/Lateralidade)
+    // Padrão RegEx: busca correspondências de lateralidade na estrutura da frase
+    if (RegExp(r'\b(direito|direita|dir)\b').hasMatch(texto)) {
+      dados.lado = 'Direito';
+    } else if (RegExp(r'\b(esquerdo|esquerda|esq)\b').hasMatch(texto)) {
+      dados.lado = 'Esquerdo';
+    }
+
+    // Extração de Entidades Clínicas (Articulação)
+    if (texto.contains('joelho')) {
+      dados.articulacao = 'Joelho';
+    } else if (texto.contains('ombro')) {
+      dados.articulacao = 'Ombro';
+    } else if (texto.contains('cotovelo')) {
+      dados.articulacao = 'Cotovelo';
+    } else if (texto.contains('quadril')) {
+      dados.articulacao = 'Quadril';
+    } else if (texto.contains('punho')) {
+      dados.articulacao = 'Punho';
+    } else if (texto.contains('tornozelo')) {
+      dados.articulacao = 'Tornozelo';
+    }
+
+    // Extração de Entidades Clínicas (Movimento)
+    if (texto.contains('flexão') || texto.contains('flexao')) {
+      dados.movimento = 'Flexão';
+    } else if (texto.contains('extensão') || texto.contains('extensao')) {
+      dados.movimento = 'Extensão';
+    } else if (texto.contains('abdução') || texto.contains('abducao')) {
+      dados.movimento = 'Abdução';
+    } else if (texto.contains('adução') || texto.contains('aducao')) {
+      dados.movimento = 'Adução';
+    } else if (texto.contains('rotação interna') || texto.contains('rotacao interna')) {
+      dados.movimento = 'Rotação Interna';
+    } else if (texto.contains('rotação externa') || texto.contains('rotacao externa')) {
+      dados.movimento = 'Rotação Externa';
+    }
+
+    // 3. Extração da Carga/Força (kgf)
+    dados.forca = _extrairValorForca(texto);
+
+    developer.log('Parsing concluído: $dados', name: 'ParserService');
+    return dados;
+  }
+
+  /// Método auxiliar de extração numérica concorrente.
+  /// Prioriza a detecção de dígitos literais e, em caso de ausência, recorre
+  /// ao processamento morfológico de numerais por extenso.
+  static double _extrairValorForca(String texto) {
+    // Heurística A: Busca por dígitos decimais explícitos (ex: "32.4", "18,0", "15")
+    // Captura opcionalmente separador de milhar/decimal e dígitos subsequentes.
+    final RegExp regexDigitos = RegExp(r'\b\d+(?:[\.,]\d+)?\b');
+    final matchDigitos = regexDigitos.firstMatch(texto);
+
+    if (matchDigitos != null) {
+      final String valorLiteral = matchDigitos.group(0)!;
+      final String valorTratado = valorLiteral.replaceAll(',', '.');
+      final double? parsedValue = double.tryParse(valorTratado);
+      if (parsedValue != null) {
+        developer.log('Força detectada via dígitos diretos: $parsedValue kgf', name: 'ParserService');
+        return parsedValue;
+      }
+    }
+
+    // Heurística B: Análise morfológica de tokens consecutivos para conversão de extenso
+    // Divide o texto em palavras individuais e localiza agrupamentos numéricos e decimais.
+    final List<String> tokens = texto.split(RegExp(r'\s+'));
+    final List<String> tokensNumericos = [];
+
+    for (final token in tokens) {
+      // Limpa pontuações periféricas para evitar falso-negativos nas chaves
+      final String tokenLimpo = token.replaceAll(RegExp(r'[^\w,\.áâãàéêíóôõúç]'), '');
+      
+      if (_palavrasNumericas.containsKey(tokenLimpo) ||
+          _separadoresDecimais.contains(tokenLimpo) ||
+          tokenLimpo == 'e' ||
+          RegExp(r'^\d+$').hasMatch(tokenLimpo)) {
+        tokensNumericos.add(tokenLimpo);
+      }
+    }
+
+    if (tokensNumericos.isEmpty) {
+      developer.log('Nenhum termo numérico ou por extenso identificado na string.', name: 'ParserService');
+      return 0.0;
+    }
+
+    developer.log('Tokens numéricos agrupados para análise de extenso: $tokensNumericos', name: 'ParserService');
+    return _converterTokensExtensoParaDouble(tokensNumericos);
+  }
+
+  /// Converte uma lista de tokens fonéticos/numéricos em um valor decimal representativo.
+  /// 
+  /// Evidência Acadêmica do Algoritmo de Tradução Fonético-Numérica:
+  /// - Identifica o separador decimal ("vírgula", "ponto", etc.) para segmentar a mantissa da fração.
+  /// - Converte a sublista inteira somando os valores posicionais (ex: "trinta" [30] + "dois" [2] = 32).
+  /// - Converte a sublista decimal e aplica divisão base 10 (ex: "quatro" [4] / 10 = 0.4).
+  /// - Soma as partes reconstruindo o valor decimal original com precisão de ponto flutuante.
+  static double _converterTokensExtensoParaDouble(List<String> tokens) {
+    // Localiza o índice do separador decimal na lista de tokens
+    int indiceSeparador = -1;
+    for (int i = 0; i < tokens.length; i++) {
+      if (_separadoresDecimais.contains(tokens[i])) {
+        indiceSeparador = i;
+        break;
+      }
+    }
+
+    List<String> tokensParteInteira;
+    List<String> tokensParteDecimal;
+
+    if (indiceSeparador != -1) {
+      tokensParteInteira = tokens.sublist(0, indiceSeparador);
+      tokensParteDecimal = tokens.sublist(indiceSeparador + 1);
+    } else {
+      tokensParteInteira = tokens;
+      tokensParteDecimal = [];
+    }
+
+    // Calcula o valor da parte inteira
+    final double parteInteira = _calcularValorSublista(tokensParteInteira);
+
+    // Calcula o valor da parte decimal
+    double parteDecimal = 0.0;
+    if (tokensParteDecimal.isNotEmpty) {
+      final double valorInteiroDecimal = _calcularValorSublista(tokensParteDecimal);
+      if (valorInteiroDecimal > 0) {
+        // Ajusta a escala decimal de acordo com a magnitude do número falado.
+        // Se o valor decimal for < 10 (ex: "quatro" -> 4), dividimos por 10 (0.4).
+        // Se for < 100 (ex: "quarenta e cinco" -> 45), dividimos por 100 (0.45), etc.
+        double divisor = 10.0;
+        while (valorInteiroDecimal >= divisor) {
+          divisor *= 10.0;
+        }
+        parteDecimal = valorInteiroDecimal / divisor;
+      }
+    }
+
+    return parteInteira + parteDecimal;
+  }
+
+  /// Calcula a soma acumulada de uma lista de tokens representando uma parte numérica.
+  /// Lida com a sintaxe natural do português que inclui conectores aditivos ("e")
+  /// e números por extenso ou em dígitos.
+  static double _calcularValorSublista(List<String> tokens) {
+    double acumulador = 0.0;
+
+    for (final token in tokens) {
+      if (token == 'e') continue; // Ignora o conectivo aditivo gramatical
+
+      // Se for dígito literal (ex: "32"), soma diretamente
+      final int? digitoDireto = int.tryParse(token);
+      if (digitoDireto != null) {
+        acumulador += digitoDireto;
+        continue;
+      }
+
+      // Se for palavra por extenso, resolve pelo mapa dicionário
+      final int? valorExtenso = _palavrasNumericas[token];
+      if (valorExtenso != null) {
+        acumulador += valorExtenso;
+      }
+    }
+
+    return acumulador;
+  }
+}

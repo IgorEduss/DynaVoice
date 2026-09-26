@@ -1,0 +1,18 @@
+00:00 +0: loading D:/_dev/MVP_UEMA-final/test/database_test.dart
+00:00 +0: D:/_dev/MVP_UEMA-final/test/database_test.dart: Seed cria 3 pacientes, 4 sessões, 6 avaliações e 12 medições
+00:00 +1: D:/_dev/MVP_UEMA-final/test/database_test.dart: PK, FK, NOT NULL, CHECK e UNIQUE rejeitam violações
+00:01 +2: D:/_dev/MVP_UEMA-final/test/database_test.dart: Persistência após fechar/reabrir e separação de pacientes homônimos
+00:02 +3: D:/_dev/MVP_UEMA-final/test/database_test.dart: Agrupa avaliações e transação desfaz criação em caso de falha
+00:02 +4: D:/_dev/MVP_UEMA-final/test/database_test.dart: JSON filtrado é arquivo legível com IDs, horário original e zero registros de outro paciente
+00:02 +5: D:/_dev/MVP_UEMA-final/test/database_test.dart: Consultas retornam média, pico e evolução esperados
+00:02 +6: D:/_dev/MVP_UEMA-final/test/database_test.dart: Exclusão em cascata preserva dados de outros pacientes
+00:03 +7: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
+00:03 +8: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
+00:03 +9: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
+00:04 +10: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
+00:04 +11: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
+00:04 +12: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
+00:04 +13: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
+00:04 +14: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
+00:13 +15: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cancelar revisão não grava uma medição
+00:16 +16: All tests passed!

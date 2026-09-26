@@ -1,0 +1,9 @@
+* text=auto
+*.pdf binary
+*.pptx binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.db binary
+*.zip binary
+*.apk binary

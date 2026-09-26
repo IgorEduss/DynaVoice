@@ -1,0 +1,24 @@
+PASSOU: FK ativada
+PASSOU: Quantidade paciente
+PASSOU: Quantidade sessao
+PASSOU: Quantidade avaliacao
+PASSOU: Quantidade medicao
+PASSOU: PK duplicada
+PASSOU: Nome obrigatório
+PASSOU: Nome vazio
+PASSOU: Data inválida
+PASSOU: Sessão sem paciente
+PASSOU: Avaliação sem sessão
+PASSOU: Medição sem avaliação
+PASSOU: Avaliação duplicada
+PASSOU: Força negativa
+PASSOU: Força textual
+PASSOU: Lado inválido
+PASSOU: Origem inválida
+PASSOU: Encerramento anterior ao início
+PASSOU: Evolução do pico de flexão direita: 34 para 38 kgf
+PASSOU: Média da primeira avaliação direita: 33,2 kgf
+PASSOU: Sem violações referenciais
+PASSOU: Integridade física do banco
+PASSOU: Persistência após reabrir
+TOTAL: 23 testes aprovados
