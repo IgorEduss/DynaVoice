@@ -9,6 +9,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'data/database.dart';
 import 'parser_service.dart';
 import 'services/export_service.dart';
+import 'services/speech_recognition_service.dart';
 import 'overlay.dart';
 
 Future<void> main() async {
@@ -24,7 +25,14 @@ Future<void> main() async {
       factory,
       p.join(directory.path, 'dynavoice.db'),
     );
-    runApp(DynaVoiceApp(database: db));
+    runApp(
+      DynaVoiceApp(
+        database: db,
+        speechService: Platform.isAndroid
+            ? DeviceSpeechRecognitionService()
+            : UnavailableSpeechRecognitionService(),
+      ),
+    );
   } catch (error) {
     runApp(
       MaterialApp(
@@ -51,7 +59,8 @@ void overlayMain() {
 
 class DynaVoiceApp extends StatelessWidget {
   final DynaDatabase database;
-  const DynaVoiceApp({super.key, required this.database});
+  final SpeechRecognitionService? speechService;
+  const DynaVoiceApp({super.key, required this.database, this.speechService});
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: 'DynaVoice',
@@ -68,13 +77,14 @@ class DynaVoiceApp extends StatelessWidget {
         backgroundColor: Color(0xFFF4F7FA),
       ),
     ),
-    home: TelaPrincipal(database: database),
+    home: TelaPrincipal(database: database, speechService: speechService),
   );
 }
 
 class TelaPrincipal extends StatefulWidget {
   final DynaDatabase database;
-  const TelaPrincipal({super.key, required this.database});
+  final SpeechRecognitionService? speechService;
+  const TelaPrincipal({super.key, required this.database, this.speechService});
   @override
   State<TelaPrincipal> createState() => _TelaPrincipalState();
 }
@@ -89,19 +99,32 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   bool _loading = true, _busy = false, _reviewing = false;
   String _search = '';
   StreamSubscription<dynamic>? _overlay;
+  StreamSubscription<SpeechCaptureSnapshot>? _speechSubscription;
+  late final SpeechRecognitionService _speech;
+  late SpeechCaptureSnapshot _speechSnapshot;
   final _command = TextEditingController();
   DynaDatabase get db => widget.database;
   @override
   void initState() {
     super.initState();
+    _speech =
+        widget.speechService ??
+        (Platform.isAndroid
+            ? DeviceSpeechRecognitionService()
+            : UnavailableSpeechRecognitionService());
+    _speechSnapshot = _speech.current;
+    _speechSubscription = _speech.snapshots.listen(_onSpeechSnapshot);
+    unawaited(_speech.prepare());
     unawaited(_refresh());
     if (Platform.isAndroid) {
       _overlay = FlutterOverlayWindow.overlayListener.listen((message) {
         if (message is String &&
-            message.startsWith('demo:') &&
+            message.startsWith('voice:') &&
             _sessionId != null &&
             !_reviewing) {
-          unawaited(_review(message.substring(5), origin: 'simulacao'));
+          final transcript = message.substring(6).trim();
+          _command.text = transcript;
+          unawaited(_review(transcript, origin: 'voz'));
         }
       });
     }
@@ -110,8 +133,23 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   @override
   void dispose() {
     _overlay?.cancel();
+    _speechSubscription?.cancel();
+    unawaited(_speech.dispose());
     _command.dispose();
     super.dispose();
+  }
+
+  void _onSpeechSnapshot(SpeechCaptureSnapshot snapshot) {
+    if (!mounted) return;
+    setState(() => _speechSnapshot = snapshot);
+    if (snapshot.state == SpeechCaptureState.result &&
+        snapshot.isFinal &&
+        snapshot.transcript.isNotEmpty &&
+        _sessionId != null &&
+        !_reviewing) {
+      _command.text = snapshot.transcript;
+      unawaited(_review(snapshot.transcript, origin: 'voz'));
+    }
   }
 
   void _notice(String text) {
@@ -237,7 +275,32 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(text.isEmpty ? 'Entrada manual' : text),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        text.isEmpty ? 'Entrada manual' : text,
+                        key: const Key('texto_original_revisao'),
+                      ),
+                    ),
+                    if (data.alertas.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        color: Theme.of(context).colorScheme.errorContainer,
+                        child: Text(data.alertas.join('\n')),
+                      ),
+                    ],
+                    if (data.validar().isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'A interpretação está incompleta. Preencha os campos ausentes antes de confirmar.',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       key: const Key('articulacao'),
@@ -348,6 +411,12 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
 
   Future<void> _showOverlay() async {
     try {
+      if (_speechSnapshot.state == SpeechCaptureState.permissionRequired) {
+        _notice(
+          'Autorize o microfone pelo botão de ditado antes de abrir a sobreposição.',
+        );
+        return;
+      }
       if (!await FlutterOverlayWindow.isPermissionGranted()) {
         await FlutterOverlayWindow.requestPermission();
         _notice('Autorize a sobreposição nas configurações e toque novamente.');
@@ -358,11 +427,11 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         width: 340,
         enableDrag: true,
         alignment: OverlayAlignment.centerRight,
-        overlayTitle: 'DynaVoice - demonstração',
-        overlayContent: 'Simulação sem captura de áudio',
+        overlayTitle: 'DynaVoice - captura por voz',
+        overlayContent: 'Reconhecimento pt-BR; revisão obrigatória no app',
       );
     } catch (e) {
-      _notice('Não foi possível abrir a demonstração: $e');
+      _notice('Não foi possível abrir a sobreposição: $e');
     }
   }
 
@@ -433,6 +502,21 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     }
   }
 
+  String _speechStateLabel(SpeechCaptureState state) => switch (state) {
+    SpeechCaptureState.permissionRequired => 'Permissão necessária',
+    SpeechCaptureState.ready => 'Pronto',
+    SpeechCaptureState.listening => 'Ouvindo',
+    SpeechCaptureState.processing => 'Processando',
+    SpeechCaptureState.result => 'Resultado',
+    SpeechCaptureState.cancelled => 'Cancelado',
+    SpeechCaptureState.error => 'Erro',
+    SpeechCaptureState.unavailable => 'Indisponível',
+  };
+
+  bool get _speechIsActive =>
+      _speechSnapshot.state == SpeechCaptureState.listening ||
+      _speechSnapshot.state == SpeechCaptureState.processing;
+
   Widget _card(Widget child) => Card(
     margin: const EdgeInsets.only(bottom: 16),
     child: Padding(padding: const EdgeInsets.all(20), child: child),
@@ -493,7 +577,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                           SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'MVP acadêmico • entrada manual e simulação\nReconhecimento de voz ainda não integrado. Use dados fictícios.',
+                              'MVP acadêmico • voz pt-BR e entrada manual\nRevise toda interpretação antes de salvar. Use somente dados fictícios.',
                               style: TextStyle(fontSize: 13),
                             ),
                           ),
@@ -583,6 +667,66 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                                 ),
                               ),
                               const SizedBox(height: 12),
+                              Container(
+                                key: const Key('painel_voz'),
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.outlineVariant,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Voz: ${_speechStateLabel(_speechSnapshot.state)}',
+                                      key: const Key('estado_voz'),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    if (_speechSnapshot.message != null)
+                                      Text(_speechSnapshot.message!),
+                                    if (_speechSnapshot.transcript.isNotEmpty)
+                                      SelectableText(
+                                        _speechSnapshot.transcript,
+                                        key: const Key('transcricao_voz'),
+                                      ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 8,
+                                      children: [
+                                        FilledButton.icon(
+                                          key: const Key('iniciar_voz'),
+                                          onPressed: _busy || _speechIsActive
+                                              ? null
+                                              : _speech.start,
+                                          icon: const Icon(Icons.mic),
+                                          label: const Text('Ditar em pt-BR'),
+                                        ),
+                                        if (_speechSnapshot.state ==
+                                            SpeechCaptureState.listening)
+                                          OutlinedButton(
+                                            key: const Key('parar_voz'),
+                                            onPressed: _speech.stop,
+                                            child: const Text('Concluir fala'),
+                                          ),
+                                        if (_speechIsActive)
+                                          TextButton(
+                                            key: const Key('cancelar_voz'),
+                                            onPressed: _speech.cancel,
+                                            child: const Text('Cancelar'),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
                               Wrap(
                                 spacing: 12,
                                 runSpacing: 12,
@@ -594,20 +738,11 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                                         : () => _review(_command.text),
                                     child: const Text('Revisar medição'),
                                   ),
-                                  OutlinedButton(
-                                    onPressed: _busy
-                                        ? null
-                                        : () => _review(
-                                            'Flexão de joelho direito trinta e dois vírgula quatro',
-                                            origin: 'simulacao',
-                                          ),
-                                    child: const Text('Simular exemplo'),
-                                  ),
                                   if (Platform.isAndroid)
                                     OutlinedButton(
                                       onPressed: _busy ? null : _showOverlay,
                                       child: const Text(
-                                        'Abrir sobreposição demo',
+                                        'Abrir sobreposição de voz',
                                       ),
                                     ),
                                   TextButton(

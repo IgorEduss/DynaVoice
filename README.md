@@ -1,8 +1,39 @@
-# DynaVoice - MVP UEMA / Nota 2
+# DynaVoice — MVP acadêmico funcional
 
-Aplicativo Flutter reconstruído a partir de `DynaVoice-MVP.zip`. Mantém a proposta de registro de aferições e o parser do protótipo, com persistência SQLite, revisão antes da gravação e exportação JSON.
+Aplicativo Android em Flutter para registrar aferições fictícias de força por voz ou digitação. A versão atual substitui a simulação interna por reconhecimento de fala do Android em português brasileiro, interpreta a transcrição, exige revisão editável e somente então grava no SQLite.
 
-## Abrir e executar
+O DynaVoice é um protótipo acadêmico. Não demonstra eficácia clínica, conformidade regulatória, proteção suficiente para dados reais nem reconhecimento perfeito. Use apenas dados fictícios.
+
+## Fluxo implementado
+
+1. Crie ou carregue pacientes fictícios, selecione um paciente e inicie uma sessão.
+2. Toque em **Ditar em pt-BR**. No primeiro uso, o Android solicita acesso ao microfone.
+3. Fale, por exemplo: **“Flexão do joelho direito, trinta e dois vírgula quatro quilos-força.”**
+4. A tela mostra os estados do reconhecedor e a transcrição parcial/definitiva.
+5. O parser apresenta articulação, movimento, lado e força em uma revisão editável.
+6. Corrija o que for necessário. Campos ausentes ou ambíguos não são inventados e impedem a confirmação.
+7. **Cancelar** não cria medição. **Confirmar e salvar** cria uma única medição.
+8. Histórico, resultados e exportação JSON passam a refletir o registro confirmado.
+
+A entrada manual continua disponível pelo botão **Digitar medição**. A transcrição original e a origem (`voz` ou `manual`) são preservadas no banco.
+
+## Reconhecimento de voz
+
+O contrato `SpeechRecognitionService` separa a interface do mecanismo de reconhecimento. O aplicativo Android usa `DeviceSpeechRecognitionService`, baseado no reconhecedor disponível no sistema, com localidade `pt_BR`, resultados parciais e definitivos. Os testes usam `FakeSpeechRecognitionService`, sem depender de microfone, rede ou serviço instalado.
+
+Estados apresentados: permissão necessária, pronto, ouvindo, processando, resultado, cancelado, indisponível e erro. Se o serviço não estiver disponível, o aplicativo informa a condição e mantém a entrada manual.
+
+O reconhecimento depende do aparelho e do serviço de fala instalado. Alguns dispositivos usam rede. A qualidade da transcrição varia com ruído, pronúncia e vocabulário.
+
+## Sobreposição Android
+
+Depois de autorizar o microfone no aplicativo principal, use **Abrir sobreposição** e conceda a permissão de exibição sobre outros aplicativos. O overlay usa o mesmo serviço real, permite ditar, concluir ou cancelar e devolve somente a transcrição ao DynaVoice. A revisão no aplicativo principal continua obrigatória antes de salvar.
+
+Nesta execução, o envio e o cancelamento do overlay foram cobertos por testes automatizados. A validação manual entre aplicativos e versões do Android continua pendente em aparelho físico.
+
+## Executar
+
+Pré-requisitos: Flutter 3.44.8 ou compatível, Android SDK, um aparelho/emulador Android e um serviço de reconhecimento de fala com português do Brasil.
 
 ```powershell
 git clone https://github.com/IgorEduss/DynaVoice.git
@@ -12,37 +43,9 @@ flutter devices
 flutter run -d <id-do-dispositivo-android>
 ```
 
-Ambiente validado: Flutter 3.44.8, Dart 3.12.2, Android SDK e emulador Pixel 8 / Android 14. A primeira compilação baixa dependências Gradle. `android/local.properties` é gerado pelo Flutter e depende da instalação local. Use `pubspec.lock` para reproduzir as versões. O compartilhamento usa share_plus 10.1.4, compatível com a configuração Android preservada do ZIP. O SDK emite avisos de futura descontinuação dessas versões Gradle/AGP/Kotlin; a atualização conjunta é trabalho futuro.
+Para validar o reconhecimento real, conecte um aparelho Android com depuração USB, confirme que ele aparece em `flutter devices`, execute o aplicativo e faça o roteiro descrito em `evidencias/VERIFICACAO_FINAL.md`.
 
-Windows tem inicialização SQLite via FFI; a compilação desktop exige Visual Studio com ferramentas C++. Não houve validação do aplicativo completo no Windows, iOS ou web. A sobreposição é exclusiva do Android. A versão atual usa `dart:io` e não oferece suporte web.
-
-## Fluxo de demonstração
-
-1. No primeiro uso, toque em **Carregar dados fictícios** (somente banco vazio) ou **Novo paciente**.
-2. Selecione um paciente e toque em **Iniciar sessão**.
-3. Digite `Flexão de joelho direito 32,4`, toque em **Revisar medição**, confira/corrija e confirme.
-4. **Simular exemplo** demonstra o parser sem capturar áudio. A sobreposição também é demonstrativa: envie o exemplo e retorne ao aplicativo para revisar.
-5. Encerre a sessão e consulte **Histórico** e **Resultados**. O filtro de paciente também se aplica à exportação.
-6. O botão de download salva um JSON na pasta de documentos do aplicativo. No Android, **Compartilhar** abre o seletor do sistema; a escolha do destino cabe ao usuário.
-7. Sessões abertas podem ser retomadas após fechar e abrir o aplicativo.
-
-O app começa vazio; nenhum dado fictício é inserido automaticamente em banco com pacientes. Pacientes são identificados por ID, permitindo nomes iguais sem misturar registros. A exclusão exige confirmação e remove o paciente e seus registros dependentes. Zero kgf é permitido; força ausente ou negativa é inválida. A faixa máxima de 1000 kgf é somente uma regra técnica do MVP.
-
-## Arquivos principais
-
-- `lib/main.dart`: interface, revisão e ciclo de atendimento.
-- `lib/parser_service.dart`: extração de entidades e força; horário estável.
-- `lib/data/database.dart`: repositório SQLite e transações.
-- `lib/services/export_service.dart`: exportação para arquivo JSON.
-- `lib/overlay.dart`: sobreposição de demonstração.
-- `sql/01_schema.sql`: esquema compartilhado pelo app e verificação independente.
-- `sql/02_dados_teste.sql`: 3 pacientes, 4 sessões, 6 avaliações e 12 medições fictícias.
-- `sql/03_consultas.sql`: 5 consultas com histórico, estatísticas e evolução.
-- `docs/`: relatório editável e código original preservado para comparação.
-- `output/pdf/`: relatório em PDF.
-- `evidencias/`: logs, banco demonstrativo, resultados e capturas.
-
-## Reproduzir verificações
+## Verificações reproduzíveis
 
 ```powershell
 flutter analyze
@@ -52,13 +55,44 @@ flutter drive -d <id-do-emulador> --driver=test_driver/integration_test.dart --t
 flutter build apk --debug
 ```
 
-`verificar_sql.py` usa apenas a biblioteca padrão do Python e recria **somente** `evidencias/dynavoice_demonstracao.db`. Não aponta para o banco do aplicativo. O teste Android recria apenas `integration_test.db`, separado de `dynavoice.db`.
+Resultados desta revisão:
 
-Para reconstruir o relatório: instale `reportlab` e execute `python scripts/gerar_relatorio.py` após os testes e capturas. O gerador usa Times New Roman do Windows, exige logs aprovados e produz o PDF e o Markdown. O relatório tem seis páginas, incluindo referências, sem capa avulsa. Os autores foram mantidos conforme a Nota 1.
+- análise estática sem apontamentos;
+- 35 testes Dart/Flutter aprovados;
+- 24 verificações SQLite/Python aprovadas e cinco consultas exportadas;
+- um cenário Android de integração aprovado no Pixel 8 / Android 14, usando serviço de voz falso;
+- APK de depuração gerado;
+- relatório PDF de seis páginas e apresentação de 12 slides renderizados e inspecionados;
+- quatro capturas e vídeo de 41 segundos do fluxo automatizado no emulador.
 
-## Limites da versão
+O cenário de integração cobre transcrição parcial/definitiva falsa, revisão, correção, cancelamento, confirmação única, persistência após reabrir, histórico, estatísticas e exportação. Ele prova o fluxo do aplicativo, não a captura física do microfone.
 
-A entrada é manual ou simulada; não há captura/transcrição real de voz. Não há autenticação, criptografia, backup, sincronização ou validação clínica. Use apenas dados fictícios nesta etapa. O parser tem vocabulário restrito e não resolve toda ambiguidade: a revisão humana é obrigatória. O teste de integração não valida sobreposição entre aplicativos nem envio por aplicativos de terceiros. Os testes de reabertura verificam a persistência SQLite; não simulam queda de energia.
+## Arquivos principais
 
-O relatório e as evidências descrevem somente cenários executados. A publicação neste repositório não substitui a entrega acadêmica no AVA.
+- `lib/main.dart`: atendimento, estados de voz e revisão obrigatória.
+- `lib/services/speech_recognition_service.dart`: interface e implementação Android.
+- `lib/parser_service.dart`: entidades, números falados, unidades e ambiguidades.
+- `lib/data/database.dart`: SQLite, migração para esquema v2 e transações.
+- `lib/services/export_service.dart`: exportação JSON.
+- `lib/overlay.dart`: sobreposição com ditado real e retorno para revisão.
+- `test/`: parser, persistência, serviço falso, widgets e overlay.
+- `integration_test/app_test.dart`: fluxo completo reproduzível no Android.
+- `sql/`: esquema, dados fictícios e consultas independentes.
+- `evidencias/`: logs, banco demonstrativo, CSVs, capturas e vídeo.
+- `docs/Relatorio_Nota2_DynaVoice.md`: relatório editável.
+- `output/pdf/Relatorio_Nota2_DynaVoice.pdf`: relatório final.
+- `output/apresentacao/DynaVoice_Nota3_Atualizada.pptx`: apresentação atualizada.
 
+`scripts/verificar_sql.py` recria somente `evidencias/dynavoice_demonstracao.db`. O teste Android usa `integration_test.db`, separado do banco normal do aplicativo.
+
+## Limitações restantes
+
+- Não havia aparelho Android físico conectado nesta execução; portanto, não há evidência atual de microfone real em hardware.
+- O overlay real entre aplicativos ainda precisa de validação manual em aparelho físico.
+- O reconhecedor do Android pode estar indisponível e sua precisão não é garantida.
+- O parser usa vocabulário controlado; campos ausentes ou ambíguos exigem correção humana.
+- Não há autenticação, criptografia, backup ou sincronização.
+- Não houve validação clínica, regulatória, de acessibilidade, desempenho ou uso com dados reais.
+- O SDK emite avisos de futura atualização conjunta de Gradle, AGP e Kotlin; o build atual termina com sucesso.
+
+As evidências registram somente os cenários realmente executados. A publicação no GitHub não substitui a entrega acadêmica no AVA.

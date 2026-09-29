@@ -8,6 +8,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:dynavoice/main.dart';
 import 'package:dynavoice/data/database.dart';
 import 'package:dynavoice/services/export_service.dart';
+import '../test/fakes/fake_speech_recognition_service.dart';
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +20,8 @@ void main() {
     await deleteDatabase(path);
     var db = await DynaDatabase.open(databaseFactory, path);
     await db.seedDemo();
-    await tester.pumpWidget(DynaVoiceApp(database: db));
+    final speech = FakeSpeechRecognitionService();
+    await tester.pumpWidget(DynaVoiceApp(database: db, speechService: speech));
     await settle(tester);
     await binding.convertFlutterSurfaceToImage();
     await settle(tester);
@@ -30,15 +32,12 @@ void main() {
     await tester.ensureVisible(find.byKey(const Key('iniciar_sessao')));
     await tester.tap(find.byKey(const Key('iniciar_sessao')));
     await settle(tester);
-    await tester.ensureVisible(find.byKey(const Key('comando')));
-    await tester.enterText(
-      find.byKey(const Key('comando')),
-      'Flexão de joelho direito 32,4',
-    );
-    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.ensureVisible(find.byKey(const Key('iniciar_voz')));
+    await tester.tap(find.byKey(const Key('iniciar_voz')));
     await settle(tester);
-    await tester.ensureVisible(find.byKey(const Key('revisar')));
-    await tester.tap(find.byKey(const Key('revisar')));
+    speech.complete(
+      'Flexão do joelho direito, trinta e dois vírgula quatro quilos-força.',
+    );
     await settle(tester);
     expect(await db.history(), hasLength(12));
     debugPrint('CAPTURANDO TELA');
@@ -49,6 +48,7 @@ void main() {
     await tester.tap(find.byKey(const Key('confirmar_medicao')));
     await settle(tester);
     expect(await db.history(), hasLength(13));
+    expect((await db.history()).first['origem'], 'voz');
     ScaffoldMessenger.of(
       tester.element(find.byType(TelaPrincipal)),
     ).clearSnackBars();

@@ -16,9 +16,10 @@ PASSOU: Força textual
 PASSOU: Lado inválido
 PASSOU: Origem inválida
 PASSOU: Encerramento anterior ao início
+PASSOU: Origem voz aceita
 PASSOU: Evolução do pico de flexão direita: 34 para 38 kgf
 PASSOU: Média da primeira avaliação direita: 33,2 kgf
 PASSOU: Sem violações referenciais
 PASSOU: Integridade física do banco
 PASSOU: Persistência após reabrir
-TOTAL: 23 testes aprovados
+TOTAL: 24 testes aprovados

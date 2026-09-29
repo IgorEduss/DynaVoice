@@ -61,7 +61,7 @@ void main() {
       "UPDATE medicao SET forca_kgf=-1 WHERE id=1",
       "UPDATE medicao SET forca_kgf='abc' WHERE id=1",
       "UPDATE medicao SET lado='Inválido' WHERE id=1",
-      "UPDATE medicao SET origem='voz' WHERE id=1",
+      "UPDATE medicao SET origem='desconhecida' WHERE id=1",
       "UPDATE sessao SET encerrada_em='2026-01-01' WHERE id=1",
     ]) {
       await expectLater(
@@ -97,6 +97,83 @@ void main() {
     },
   );
   test(
+    'Voz preserva transcrição e origem; origem inválida é rejeitada',
+    () async {
+      final patient = await store.addPatient('Paciente Fictício Voz');
+      final session = await store.startSession(patient);
+      const transcript =
+          'Flexão do joelho direito, trinta e dois vírgula quatro quilos-força.';
+      final data = ParserService.processarTextoTranscrito(transcript);
+      await store.saveMeasurement(session, data, origin: 'voz');
+      final saved = (await store.history()).single;
+      expect(saved['origem'], 'voz');
+      expect(saved['texto_original'], transcript);
+      await expectLater(
+        store.saveMeasurement(session, data, origin: 'automatica'),
+        throwsArgumentError,
+      );
+      expect(await store.history(), hasLength(1));
+    },
+  );
+
+  test('Migração v1 para v2 preserva medição simulada e aceita voz', () async {
+    final path = '${dir.path}/migration.db';
+    final legacy = await databaseFactoryFfi.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: (db, _) async {
+          await db.execute(
+            'CREATE TABLE paciente(id INTEGER PRIMARY KEY,nome TEXT NOT NULL,criado_em TEXT NOT NULL)',
+          );
+          await db.execute(
+            'CREATE TABLE sessao(id INTEGER PRIMARY KEY,paciente_id INTEGER NOT NULL REFERENCES paciente(id) ON DELETE CASCADE,iniciada_em TEXT NOT NULL,encerrada_em TEXT)',
+          );
+          await db.execute(
+            'CREATE TABLE avaliacao(id INTEGER PRIMARY KEY,sessao_id INTEGER NOT NULL REFERENCES sessao(id) ON DELETE CASCADE,articulacao TEXT NOT NULL,movimento TEXT NOT NULL,UNIQUE(sessao_id,articulacao,movimento))',
+          );
+          await db.execute(
+            "CREATE TABLE medicao(id INTEGER PRIMARY KEY,avaliacao_id INTEGER NOT NULL REFERENCES avaliacao(id) ON DELETE CASCADE,lado TEXT NOT NULL,forca_kgf REAL NOT NULL,registrada_em TEXT NOT NULL,texto_original TEXT NOT NULL DEFAULT '',origem TEXT NOT NULL CHECK(origem IN ('manual','simulacao')))",
+          );
+          await db.insert('paciente', {
+            'id': 1,
+            'nome': 'Paciente Legado Fictício',
+            'criado_em': '2026-09-01T10:00:00Z',
+          });
+          await db.insert('sessao', {
+            'id': 1,
+            'paciente_id': 1,
+            'iniciada_em': '2026-09-01T10:00:00Z',
+          });
+          await db.insert('avaliacao', {
+            'id': 1,
+            'sessao_id': 1,
+            'articulacao': 'Joelho',
+            'movimento': 'Flexão',
+          });
+          await db.insert('medicao', {
+            'id': 1,
+            'avaliacao_id': 1,
+            'lado': 'Direito',
+            'forca_kgf': 20.0,
+            'registrada_em': '2026-09-01T10:01:00Z',
+            'texto_original': 'exemplo legado',
+            'origem': 'simulacao',
+          });
+        },
+      ),
+    );
+    await legacy.close();
+    final migrated = await DynaDatabase.open(databaseFactoryFfi, path);
+    addTearDown(migrated.close);
+    expect((await migrated.history()).single['origem'], 'simulacao');
+    final data = ParserService.processarTextoTranscrito(
+      'joelho direito flexão 30 kgf',
+    );
+    await migrated.saveMeasurement(1, data, origin: 'voz');
+    expect(await migrated.history(), hasLength(2));
+  });
+  test(
     'Agrupa avaliações e transação desfaz criação em caso de falha',
     () async {
       final patient = await store.addPatient('Paciente Teste');
@@ -106,7 +183,7 @@ void main() {
       );
       await expectLater(
         store.saveMeasurement(session, d, origin: 'invalida'),
-        throwsA(isA<DatabaseException>()),
+        throwsArgumentError,
       );
       expect(await store.db.query('avaliacao'), isEmpty);
       await store.saveMeasurement(session, d);

@@ -10,10 +10,34 @@ class DynaDatabase {
     final db = await factory.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        version: 1,
+        version: 2,
         onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: (db, _) async {
           await executeScript(db, schema);
+        },
+        onUpgrade: (db, oldVersion, newVersion) async {
+          if (oldVersion < 2) {
+            await db.execute('ALTER TABLE medicao RENAME TO medicao_v1');
+            await db.execute('''
+              CREATE TABLE medicao (
+                id INTEGER PRIMARY KEY,
+                avaliacao_id INTEGER NOT NULL REFERENCES avaliacao(id) ON DELETE CASCADE,
+                lado TEXT NOT NULL CHECK(lado IN ('Direito','Esquerdo')),
+                forca_kgf REAL NOT NULL CHECK(typeof(forca_kgf) IN ('integer','real') AND forca_kgf >= 0 AND forca_kgf <= 1000),
+                registrada_em TEXT NOT NULL CHECK(julianday(registrada_em) IS NOT NULL),
+                texto_original TEXT NOT NULL DEFAULT '',
+                origem TEXT NOT NULL CHECK(origem IN ('manual','voz','simulacao'))
+              )
+            ''');
+            await db.execute('''
+              INSERT INTO medicao(id,avaliacao_id,lado,forca_kgf,registrada_em,texto_original,origem)
+              SELECT id,avaliacao_id,lado,forca_kgf,registrada_em,texto_original,origem FROM medicao_v1
+            ''');
+            await db.execute('DROP TABLE medicao_v1');
+            await db.execute(
+              'CREATE INDEX idx_medicao_avaliacao ON medicao(avaliacao_id)',
+            );
+          }
         },
       ),
     );
@@ -58,6 +82,9 @@ class DynaDatabase {
     DadosAfericao data, {
     String origin = 'manual',
   }) async {
+    if (!const {'manual', 'voz', 'simulacao'}.contains(origin)) {
+      throw ArgumentError.value(origin, 'origin', 'Origem inválida.');
+    }
     final errors = data.validar();
     if (errors.isNotEmpty) throw ArgumentError(errors.join(' '));
     return db.transaction((txn) async {
@@ -145,7 +172,7 @@ class DynaDatabase {
       patientId == null ? [] : [patientId],
     );
     return {
-      'schema_version': 1,
+      'schema_version': 2,
       'unidade_forca': 'kgf',
       'pacientes': patients,
       'sessoes': sessions,

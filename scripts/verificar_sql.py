@@ -27,13 +27,16 @@ invalid={
  'Força negativa':"UPDATE medicao SET forca_kgf=-1 WHERE id=1",
  'Força textual':"UPDATE medicao SET forca_kgf='abc' WHERE id=1",
  'Lado inválido':"UPDATE medicao SET lado='Inválido' WHERE id=1",
- 'Origem inválida':"UPDATE medicao SET origem='voz' WHERE id=1",
+ 'Origem inválida':"UPDATE medicao SET origem='desconhecida' WHERE id=1",
  'Encerramento anterior ao início':"UPDATE sessao SET encerrada_em='2026-01-01' WHERE id=1"
 }
 for name,sql in invalid.items():
  try:db.execute(sql)
  except sqlite3.IntegrityError:check(name,True)
  else:check(name,False)
+db.rollback()
+db.execute("UPDATE medicao SET origem='voz' WHERE id=1")
+check('Origem voz aceita',db.execute("SELECT origem FROM medicao WHERE id=1").fetchone()[0]=='voz')
 db.rollback()
 queries=(root/'sql/03_consultas.sql').read_text(encoding='utf-8')
 queries='\n'.join(l for l in queries.splitlines() if not l.strip().startswith('--'))

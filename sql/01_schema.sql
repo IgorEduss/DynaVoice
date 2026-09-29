@@ -24,7 +24,7 @@ CREATE TABLE medicao (
  forca_kgf REAL NOT NULL CHECK(typeof(forca_kgf) IN ('integer','real') AND forca_kgf >= 0 AND forca_kgf <= 1000),
  registrada_em TEXT NOT NULL CHECK(julianday(registrada_em) IS NOT NULL),
  texto_original TEXT NOT NULL DEFAULT '',
- origem TEXT NOT NULL CHECK(origem IN ('manual','simulacao'))
+ origem TEXT NOT NULL CHECK(origem IN ('manual','voz','simulacao'))
 );
 CREATE INDEX idx_sessao_paciente ON sessao(paciente_id);
 CREATE INDEX idx_medicao_avaliacao ON medicao(avaliacao_id);

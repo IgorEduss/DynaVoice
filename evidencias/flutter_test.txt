@@ -1,18 +1,37 @@
-00:00 +0: loading D:/_dev/MVP_UEMA-final/test/database_test.dart
-00:00 +0: D:/_dev/MVP_UEMA-final/test/database_test.dart: Seed cria 3 pacientes, 4 sessões, 6 avaliações e 12 medições
-00:00 +1: D:/_dev/MVP_UEMA-final/test/database_test.dart: PK, FK, NOT NULL, CHECK e UNIQUE rejeitam violações
-00:01 +2: D:/_dev/MVP_UEMA-final/test/database_test.dart: Persistência após fechar/reabrir e separação de pacientes homônimos
-00:02 +3: D:/_dev/MVP_UEMA-final/test/database_test.dart: Agrupa avaliações e transação desfaz criação em caso de falha
-00:02 +4: D:/_dev/MVP_UEMA-final/test/database_test.dart: JSON filtrado é arquivo legível com IDs, horário original e zero registros de outro paciente
-00:02 +5: D:/_dev/MVP_UEMA-final/test/database_test.dart: Consultas retornam média, pico e evolução esperados
-00:02 +6: D:/_dev/MVP_UEMA-final/test/database_test.dart: Exclusão em cascata preserva dados de outros pacientes
-00:03 +7: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
-00:03 +8: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
-00:03 +9: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
-00:04 +10: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
-00:04 +11: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
-00:04 +12: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
-00:04 +13: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
-00:04 +14: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
-00:13 +15: D:/_dev/MVP_UEMA-final/test/widget_test.dart: Cancelar revisão não grava uma medição
-00:16 +16: All tests passed!
+00:00 +0: loading <WORKSPACE>/test/database_test.dart
+00:00 +0: <WORKSPACE>/test/database_test.dart: Seed cria 3 pacientes, 4 sessões, 6 avaliações e 12 medições
+00:00 +1: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +2: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +3: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +4: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +5: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +6: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +7: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +8: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +9: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +10: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +11: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +12: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +13: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +14: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +15: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +16: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +17: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +18: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +19: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +20: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +21: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +22: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +23: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +24: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +25: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +26: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +27: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:00 +28: <WORKSPACE>/test/overlay_test.dart: Overlay envia transcrição real para revisão e fecha
+00:02 +29: <WORKSPACE>/test/overlay_test.dart: Cancelar no overlay não compartilha transcrição
+00:04 +30: <WORKSPACE>/test/widget_test.dart: Cadastro, revisão, correção, gravação, histórico e encerramento
+00:16 +31: <WORKSPACE>/test/widget_test.dart: Cancelar revisão não grava uma medição
+00:21 +32: <WORKSPACE>/test/widget_test.dart: Frase incompleta exige correção e não é salva silenciosamente
+00:26 +33: <WORKSPACE>/test/widget_test.dart: Voz falsa exibe parcial, exige revisão e salva uma única medição de origem voz
+00:31 +34: <WORKSPACE>/test/widget_test.dart: Cancelar captura de voz não abre revisão nem grava
+00:35 +35: All tests passed!

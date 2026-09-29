@@ -1,5 +1,3 @@
-/// Classe que modela os dados estruturados de uma aferição de dinamometria.
-/// Serve como entidade relacional clínica para o MVP.
 class DadosAfericao {
   String paciente;
   String articulacao;
@@ -8,6 +6,7 @@ class DadosAfericao {
   double? forca;
   final DateTime registradaEm;
   String textoOriginal;
+  final List<String> alertas;
 
   DadosAfericao({
     this.paciente = 'Geral',
@@ -16,21 +15,20 @@ class DadosAfericao {
     this.lado = '',
     this.forca,
     this.textoOriginal = '',
+    List<String>? alertas,
     DateTime? registradaEm,
-  }) : registradaEm = registradaEm ?? DateTime.now().toUtc();
+  }) : alertas = alertas ?? <String>[],
+       registradaEm = registradaEm ?? DateTime.now().toUtc();
 
-  /// Converte a aferição para um mapa chave-valor para simulação de exportação JSON/CSV.
-  Map<String, dynamic> toJson() {
-    return {
-      'paciente': paciente,
-      'articulação': articulacao,
-      'movimento': movimento,
-      'lado': lado,
-      'força_kgf': forca,
-      'texto_original': textoOriginal,
-      'timestamp': registradaEm.toUtc().toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'paciente': paciente,
+    'articulação': articulacao,
+    'movimento': movimento,
+    'lado': lado,
+    'força_kgf': forca,
+    'texto_original': textoOriginal,
+    'timestamp': registradaEm.toUtc().toIso8601String(),
+  };
 
   List<String> validar() {
     final errors = <String>[];
@@ -40,7 +38,7 @@ class DadosAfericao {
     if (!ParserService.movimentos.contains(movimento)) {
       errors.add('Selecione o movimento.');
     }
-    if (!['Direito', 'Esquerdo'].contains(lado)) {
+    if (!ParserService.lados.contains(lado)) {
       errors.add('Selecione o lado.');
     }
     if (forca == null || !forca!.isFinite || forca! < 0 || forca! > 1000) {
@@ -50,13 +48,14 @@ class DadosAfericao {
   }
 
   @override
-  String toString() {
-    return 'DadosAfericao(articulação: $articulacao, movimento: $movimento, lado: $lado, força: $forca kgf)';
-  }
+  String toString() =>
+      'DadosAfericao(articulação: $articulacao, movimento: $movimento, lado: $lado, força: $forca kgf)';
 }
 
-/// Serviço de Processamento de Linguagem Natural (NLP) simplificado e baseado em RegEx.
-/// Projetado para execução offline (Edge Computing) em sistemas móveis.
+/// Parser determinístico para a linguagem restrita do MVP acadêmico.
+///
+/// Ele extrai somente valores explicitamente presentes. Mais de uma opção para
+/// o mesmo campo é tratada como ambiguidade e deixada em branco para revisão.
 class ParserService {
   static const articulacoes = [
     'Joelho',
@@ -74,17 +73,35 @@ class ParserService {
     'Rotação Interna',
     'Rotação Externa',
   ];
+  static const lados = ['Direito', 'Esquerdo'];
 
-  /// Dicionário para conversão de números escritos por extenso em Português (Brasil).
-  /// Esta estrutura mapeia chaves fonéticas textuais para seus respectivos pesos inteiros,
-  /// permitindo a reconstrução de grandezas decimais por composição aditiva.
-  static const Map<String, int> _palavrasNumericas = {
+  static const Map<String, List<String>> _articulationTerms = {
+    'Joelho': ['joelho'],
+    'Ombro': ['ombro'],
+    'Cotovelo': ['cotovelo'],
+    'Quadril': ['quadril'],
+    'Punho': ['punho'],
+    'Tornozelo': ['tornozelo'],
+  };
+  static const Map<String, List<String>> _movementTerms = {
+    'Rotação Interna': ['rotacao interna'],
+    'Rotação Externa': ['rotacao externa'],
+    'Flexão': ['flexao'],
+    'Extensão': ['extensao'],
+    'Abdução': ['abducao'],
+    'Adução': ['aducao'],
+  };
+  static const Map<String, List<String>> _sideTerms = {
+    'Direito': ['direito', 'direita', 'dir'],
+    'Esquerdo': ['esquerdo', 'esquerda', 'esq'],
+  };
+
+  static const Map<String, int> _numberWords = {
     'zero': 0,
     'um': 1,
     'uma': 1,
     'dois': 2,
     'duas': 2,
-    'três': 3,
     'tres': 3,
     'quatro': 4,
     'cinco': 5,
@@ -107,7 +124,6 @@ class ParserService {
     'trinta': 30,
     'quarenta': 40,
     'cinquenta': 50,
-    'cinqüenta': 50,
     'sessenta': 60,
     'setenta': 70,
     'oitenta': 80,
@@ -115,210 +131,238 @@ class ParserService {
     'cem': 100,
     'cento': 100,
     'duzentos': 200,
+    'duzentas': 200,
     'trezentos': 300,
+    'trezentas': 300,
+    'quatrocentos': 400,
+    'quatrocentas': 400,
+    'quinhentos': 500,
+    'quinhentas': 500,
+    'seiscentos': 600,
+    'seiscentas': 600,
+    'setecentos': 700,
+    'setecentas': 700,
+    'oitocentos': 800,
+    'oitocentas': 800,
+    'novecentos': 900,
+    'novecentas': 900,
+    'mil': 1000,
   };
+  static const _decimalSeparators = {'virgula', 'ponto'};
+  static final _unitPattern = RegExp(
+    r'\b(?:kgf|kg|quilo|quilos)(?:[\s-]*(?:forca))?\b',
+  );
 
-  /// Lista de separadores decimais fonéticos e literais comuns na fala e na transcrição.
-  static const List<String> _separadoresDecimais = [
-    'vírgula',
-    'virgula',
-    'ponto',
-    ',',
-    '.',
-  ];
-
-  /// Executa o fluxo de parsing NLP e extração de entidades sobre o texto bruto.
-  ///
-  /// O algoritmo opera em quatro etapas fundamentais:
-  /// 1. Normalização do texto (conversão para caixa baixa, remoção de acentos/caracteres espúrios).
-  /// 2. Mapeamento de entidades estáticas (Articulação, Lado, Movimento) por correspondência de padrões (substrings/RegEx).
-  /// 3. Identificação e extração do valor numérico (Força) utilizando duas heurísticas concorrentes:
-  ///    a) Busca por dígitos diretos (ex: "18.5" ou "32,4").
-  ///    b) Decodificação de termos consecutivos por extenso (ex: "trinta e dois vírgula quatro").
-  /// 4. Retorno do objeto estruturado pronto para validação visual na UI.
   static DadosAfericao processarTextoTranscrito(String textoBruto) {
-    // 1. Normalização
-    final String texto = textoBruto.toLowerCase().trim();
-    final dados = DadosAfericao(textoOriginal: textoBruto);
-
-    // 2. Extração de Entidades Clínicas (Lado/Lateralidade)
-    // Padrão RegEx: busca correspondências de lateralidade na estrutura da frase
-    if (RegExp(r'\b(direito|direita|dir)\b').hasMatch(texto)) {
-      dados.lado = 'Direito';
-    } else if (RegExp(r'\b(esquerdo|esquerda|esq)\b').hasMatch(texto)) {
-      dados.lado = 'Esquerdo';
-    }
-
-    // Extração de Entidades Clínicas (Articulação)
-    if (texto.contains('joelho')) {
-      dados.articulacao = 'Joelho';
-    } else if (texto.contains('ombro')) {
-      dados.articulacao = 'Ombro';
-    } else if (texto.contains('cotovelo')) {
-      dados.articulacao = 'Cotovelo';
-    } else if (texto.contains('quadril')) {
-      dados.articulacao = 'Quadril';
-    } else if (texto.contains('punho')) {
-      dados.articulacao = 'Punho';
-    } else if (texto.contains('tornozelo')) {
-      dados.articulacao = 'Tornozelo';
-    }
-
-    // Extração de Entidades Clínicas (Movimento)
-    if (texto.contains('flexão') || texto.contains('flexao')) {
-      dados.movimento = 'Flexão';
-    } else if (texto.contains('extensão') || texto.contains('extensao')) {
-      dados.movimento = 'Extensão';
-    } else if (texto.contains('abdução') || texto.contains('abducao')) {
-      dados.movimento = 'Abdução';
-    } else if (texto.contains('adução') || texto.contains('aducao')) {
-      dados.movimento = 'Adução';
-    } else if (texto.contains('rotação interna') ||
-        texto.contains('rotacao interna')) {
-      dados.movimento = 'Rotação Interna';
-    } else if (texto.contains('rotação externa') ||
-        texto.contains('rotacao externa')) {
-      dados.movimento = 'Rotação Externa';
-    }
-
-    // 3. Extração da Carga/Força (kgf)
-    dados.forca = _extrairValorForca(texto);
-
-    return dados;
+    final normalized = _normalize(textoBruto);
+    final data = DadosAfericao(textoOriginal: textoBruto);
+    data.articulacao = _resolveEntity(
+      normalized,
+      _articulationTerms,
+      'articulação',
+      data.alertas,
+    );
+    data.movimento = _resolveEntity(
+      normalized,
+      _movementTerms,
+      'movimento',
+      data.alertas,
+    );
+    data.lado = _resolveEntity(normalized, _sideTerms, 'lado', data.alertas);
+    data.forca = _extractForce(normalized, data.alertas);
+    return data;
   }
 
-  /// Método auxiliar de extração numérica concorrente.
-  /// Prioriza a detecção de dígitos literais e, em caso de ausência, recorre
-  /// ao processamento morfológico de numerais por extenso.
-  static double? _extrairValorForca(String texto) {
-    if (RegExp(r'(^|\s)(menos|[-−])\s*\w').hasMatch(texto)) return null;
-
-    // Heurística A: Busca por dígitos decimais explícitos (ex: "32.4", "18,0", "15")
-    // Captura opcionalmente separador de milhar/decimal e dígitos subsequentes.
-    final RegExp regexDigitos = RegExp(r'\b\d+(?:[\.,]\d+)?\b');
-    final matches = regexDigitos.allMatches(texto).toList();
-    if (matches.length > 1) return null;
-    final matchDigitos = matches.isEmpty ? null : matches.single;
-
-    if (matchDigitos != null) {
-      final String valorLiteral = matchDigitos.group(0)!;
-      final String valorTratado = valorLiteral.replaceAll(',', '.');
-      final double? parsedValue = double.tryParse(valorTratado);
-      if (parsedValue != null) {
-        return parsedValue;
+  static String _resolveEntity(
+    String text,
+    Map<String, List<String>> terms,
+    String label,
+    List<String> warnings,
+  ) {
+    final matches = <String>[];
+    for (final entry in terms.entries) {
+      if (entry.value.any((term) => _containsTerm(text, term))) {
+        matches.add(entry.key);
       }
     }
-
-    // Heurística B: Análise morfológica de tokens consecutivos para conversão de extenso
-    // Divide o texto em palavras individuais e localiza agrupamentos numéricos e decimais.
-    final List<String> tokens = texto.split(RegExp(r'\s+'));
-    final List<String> tokensNumericos = [];
-
-    for (final token in tokens) {
-      // Limpa pontuações periféricas para evitar falso-negativos nas chaves
-      final String tokenLimpo = token.replaceAll(
-        RegExp(r'[^\wáâãàéêíóôõúç]'),
-        '',
+    if (matches.length == 1) return matches.single;
+    if (matches.length > 1) {
+      warnings.add(
+        'Mais de um $label foi reconhecido (${matches.join(' / ')}). Selecione o correto.',
       );
-
-      if (_palavrasNumericas.containsKey(tokenLimpo) ||
-          _separadoresDecimais.contains(tokenLimpo) ||
-          tokenLimpo == 'e' ||
-          RegExp(r'^\d+$').hasMatch(tokenLimpo)) {
-        tokensNumericos.add(tokenLimpo);
-      }
     }
+    return '';
+  }
 
-    if (!tokensNumericos.any(_palavrasNumericas.containsKey)) {
+  static bool _containsTerm(String text, String term) => RegExp(
+    '(?:^|[^a-z0-9])${RegExp.escape(term)}(?:\$|[^a-z0-9])',
+  ).hasMatch(text);
+
+  static double? _extractForce(String text, List<String> warnings) {
+    if (RegExp(r'(?:^|\s)(?:menos|-|−)\s*(?:\d|[a-z])').hasMatch(text)) {
+      warnings.add('Valor negativo reconhecido; informe uma força válida.');
       return null;
     }
-
-    return _converterTokensExtensoParaDouble(tokensNumericos);
-  }
-
-  /// Converte uma lista de tokens fonéticos/numéricos em um valor decimal representativo.
-  ///
-  /// Evidência Acadêmica do Algoritmo de Tradução Fonético-Numérica:
-  /// - Identifica o separador decimal ("vírgula", "ponto", etc.) para segmentar a mantissa da fração.
-  /// - Converte a sublista inteira somando os valores posicionais (ex: "trinta" [30] + "dois" [2] = 32).
-  /// - Converte a sublista decimal e aplica divisão base 10 (ex: "quatro" [4] / 10 = 0.4).
-  /// - Soma as partes reconstruindo o valor decimal original com precisão de ponto flutuante.
-  static double _converterTokensExtensoParaDouble(List<String> tokens) {
-    // Localiza o índice do separador decimal na lista de tokens
-    int indiceSeparador = -1;
-    for (int i = 0; i < tokens.length; i++) {
-      if (_separadoresDecimais.contains(tokens[i])) {
-        indiceSeparador = i;
-        break;
+    final candidates = <_NumberCandidate>[];
+    for (final match in RegExp(r'\b\d+(?:[.,]\d+)?\b').allMatches(text)) {
+      final value = double.tryParse(match.group(0)!.replaceAll(',', '.'));
+      if (value != null) {
+        candidates.add(_NumberCandidate(value, match.start, match.end));
       }
     }
 
-    List<String> tokensParteInteira;
-    List<String> tokensParteDecimal;
-
-    if (indiceSeparador != -1) {
-      tokensParteInteira = tokens.sublist(0, indiceSeparador);
-      tokensParteDecimal = tokens.sublist(indiceSeparador + 1);
-    } else {
-      tokensParteInteira = tokens;
-      tokensParteDecimal = [];
-    }
-
-    // Calcula o valor da parte inteira
-    final double parteInteira = _calcularValorSublista(tokensParteInteira);
-
-    // Calcula o valor da parte decimal
-    double parteDecimal = 0.0;
-    if (tokensParteDecimal.isNotEmpty) {
-      final significant = tokensParteDecimal.where((t) => t != 'e').toList();
-      if (significant.isNotEmpty &&
-          significant.every((t) => (_palavrasNumericas[t] ?? 10) < 10)) {
-        final digits = significant
-            .map((t) => _palavrasNumericas[t].toString())
-            .join();
-        return parteInteira + double.parse('0.$digits');
-      }
-      final double valorInteiroDecimal = _calcularValorSublista(
-        tokensParteDecimal,
-      );
-      if (valorInteiroDecimal > 0) {
-        // Ajusta a escala decimal de acordo com a magnitude do número falado.
-        // Se o valor decimal for < 10 (ex: "quatro" -> 4), dividimos por 10 (0.4).
-        // Se for < 100 (ex: "quarenta e cinco" -> 45), dividimos por 100 (0.45), etc.
-        double divisor = 10.0;
-        while (valorInteiroDecimal >= divisor) {
-          divisor *= 10.0;
+    final tokens = RegExp(r'[a-z]+').allMatches(text).toList();
+    for (var index = 0; index < tokens.length; index++) {
+      if (!_numberWords.containsKey(tokens[index].group(0))) continue;
+      final sequence = <String>[];
+      var endIndex = index;
+      var sawSeparator = false;
+      for (var cursor = index; cursor < tokens.length; cursor++) {
+        final token = tokens[cursor].group(0)!;
+        final previousEnd = cursor == index
+            ? tokens[cursor].start
+            : tokens[cursor - 1].end;
+        final between = text.substring(previousEnd, tokens[cursor].start);
+        if (cursor > index && between.trim().isNotEmpty) break;
+        if (_numberWords.containsKey(token)) {
+          sequence.add(token);
+        } else if (token == 'e') {
+          if (sequence.isEmpty || sequence.last == 'e' || sawSeparator) break;
+          sequence.add(token);
+        } else if (_decimalSeparators.contains(token) && !sawSeparator) {
+          if (sequence.isEmpty || sequence.last == 'e') break;
+          sawSeparator = true;
+          sequence.add(token);
+        } else {
+          break;
         }
-        parteDecimal = valorInteiroDecimal / divisor;
+        endIndex = cursor;
+      }
+      while (sequence.isNotEmpty && sequence.last == 'e') {
+        sequence.removeLast();
+        endIndex--;
+      }
+      final value = _parseWordNumber(sequence);
+      if (value != null) {
+        candidates.add(
+          _NumberCandidate(value, tokens[index].start, tokens[endIndex].end),
+        );
+        index = endIndex;
       }
     }
 
-    return parteInteira + parteDecimal;
+    final unique = <_NumberCandidate>[];
+    for (final candidate in candidates) {
+      if (!unique.any(
+        (other) => other.start == candidate.start && other.end == candidate.end,
+      )) {
+        unique.add(candidate);
+      }
+    }
+    if (unique.isEmpty) return null;
+    if (unique.length == 1) return unique.single.value;
+
+    final unitMatches = _unitPattern.allMatches(text).toList();
+    final unitBound = unique.where((candidate) {
+      return unitMatches.any((unit) {
+        final distance = candidate.end <= unit.start
+            ? unit.start - candidate.end
+            : candidate.start >= unit.end
+            ? candidate.start - unit.end
+            : 0;
+        return distance <= 18;
+      });
+    }).toList();
+    if (unitBound.length == 1) return unitBound.single.value;
+    warnings.add(
+      'Mais de um número foi reconhecido; informe qual corresponde à força em kgf.',
+    );
+    return null;
   }
 
-  /// Calcula a soma acumulada de uma lista de tokens representando uma parte numérica.
-  /// Lida com a sintaxe natural do português que inclui conectores aditivos ("e")
-  /// e números por extenso ou em dígitos.
-  static double _calcularValorSublista(List<String> tokens) {
-    double acumulador = 0.0;
+  static double? _parseWordNumber(List<String> sequence) {
+    if (sequence.isEmpty) return null;
+    final separator = sequence.indexWhere(_decimalSeparators.contains);
+    final integerTokens = separator < 0
+        ? sequence
+        : sequence.sublist(0, separator);
+    final decimalTokens = separator < 0
+        ? const <String>[]
+        : sequence.sublist(separator + 1);
+    if (integerTokens.isEmpty || (separator >= 0 && decimalTokens.isEmpty)) {
+      return null;
+    }
+    final integer = _sumNumberWords(integerTokens);
+    if (integer == null) return null;
+    if (decimalTokens.isEmpty) return integer.toDouble();
+    final significant = decimalTokens.where((token) => token != 'e').toList();
+    if (significant.every((token) => (_numberWords[token] ?? 10) < 10)) {
+      final digits = significant.map((token) => _numberWords[token]).join();
+      return double.parse('$integer.$digits');
+    }
+    final decimal = _sumNumberWords(decimalTokens);
+    if (decimal == null) return null;
+    return integer + decimal / _pow10(decimal.toString().length);
+  }
 
+  static int? _sumNumberWords(List<String> tokens) {
+    var total = 0;
     for (final token in tokens) {
-      if (token == 'e') continue; // Ignora o conectivo aditivo gramatical
-
-      // Se for dígito literal (ex: "32"), soma diretamente
-      final int? digitoDireto = int.tryParse(token);
-      if (digitoDireto != null) {
-        acumulador += digitoDireto;
-        continue;
-      }
-
-      // Se for palavra por extenso, resolve pelo mapa dicionário
-      final int? valorExtenso = _palavrasNumericas[token];
-      if (valorExtenso != null) {
-        acumulador += valorExtenso;
-      }
+      if (token == 'e') continue;
+      final value = _numberWords[token];
+      if (value == null) return null;
+      total += value;
     }
-
-    return acumulador;
+    return total;
   }
+
+  static double _pow10(int exponent) {
+    var value = 1.0;
+    for (var i = 0; i < exponent; i++) {
+      value *= 10;
+    }
+    return value;
+  }
+
+  static String _normalize(String source) {
+    var value = source.toLowerCase();
+    const replacements = {
+      'á': 'a',
+      'à': 'a',
+      'â': 'a',
+      'ã': 'a',
+      'ä': 'a',
+      'é': 'e',
+      'è': 'e',
+      'ê': 'e',
+      'ë': 'e',
+      'í': 'i',
+      'ì': 'i',
+      'î': 'i',
+      'ï': 'i',
+      'ó': 'o',
+      'ò': 'o',
+      'ô': 'o',
+      'õ': 'o',
+      'ö': 'o',
+      'ú': 'u',
+      'ù': 'u',
+      'û': 'u',
+      'ü': 'u',
+      'ç': 'c',
+    };
+    replacements.forEach((from, to) => value = value.replaceAll(from, to));
+    return value
+        .replaceAll(RegExp(r'[^a-z0-9.,\-\s]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+}
+
+class _NumberCandidate {
+  final double value;
+  final int start;
+  final int end;
+
+  const _NumberCandidate(this.value, this.start, this.end);
 }
