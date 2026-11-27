@@ -38,7 +38,7 @@ O teste manual em um Samsung Android 12 confirmou o ditado e a correção sobre 
 Pré-requisitos: Flutter 3.44.8 ou compatível, Android SDK, um aparelho/emulador Android e um serviço de reconhecimento de fala com português do Brasil.
 
 ```powershell
-git clone --branch codex/functional-voice-mvp --single-branch https://github.com/IgorEduss/DynaVoice.git
+git clone https://github.com/IgorEduss/DynaVoice.git
 cd DynaVoice
 flutter pub get
 flutter devices
