@@ -249,7 +249,11 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     _sessionId = null;
     if (Platform.isAndroid) {
       try {
-        await FlutterOverlayWindow.closeOverlay();
+        if (await FlutterOverlayWindow.isActive()) {
+          await FlutterOverlayWindow.closeOverlay().timeout(
+            const Duration(seconds: 2),
+          );
+        }
       } catch (_) {}
     }
     _notice('Sessão encerrada. Os registros permanecem no banco.');

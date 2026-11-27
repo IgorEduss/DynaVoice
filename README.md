@@ -36,7 +36,7 @@ Nesta execução, o envio e o cancelamento do overlay foram cobertos por testes 
 Pré-requisitos: Flutter 3.44.8 ou compatível, Android SDK, um aparelho/emulador Android e um serviço de reconhecimento de fala com português do Brasil.
 
 ```powershell
-git clone https://github.com/IgorEduss/DynaVoice.git
+git clone --branch codex/functional-voice-mvp --single-branch https://github.com/IgorEduss/DynaVoice.git
 cd DynaVoice
 flutter pub get
 flutter devices
@@ -52,8 +52,11 @@ flutter analyze
 flutter test --reporter expanded
 python scripts/verificar_sql.py
 flutter drive -d <id-do-emulador> --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart
+flutter drive -d <id-do-emulador> --driver=test_driver/integration_test.dart --target=integration_test/manual_android_test.dart
 flutter build apk --debug
 ```
+
+As capturas dos testes são gravadas em `build/evidencias/telas/`. Para usar outro diretório, defina a variável de ambiente `DYNAVOICE_EVIDENCIAS`.
 
 Resultados desta revisão:
 
@@ -65,7 +68,9 @@ Resultados desta revisão:
 - relatório PDF de seis páginas e apresentação de 12 slides renderizados e inspecionados;
 - quatro capturas e vídeo de 41 segundos do fluxo automatizado no emulador.
 
-O cenário de integração cobre transcrição parcial/definitiva falsa, revisão, correção, cancelamento, confirmação única, persistência após reabrir, histórico, estatísticas e exportação. Ele prova o fluxo do aplicativo, não a captura física do microfone.
+O cenário de integração cobre transcrição definitiva simulada, revisão, correção, confirmação única, encerramento da sessão, persistência após reabrir, histórico, estatísticas e exportação. Os testes de interface também cobrem transcrição parcial e cancelamento. Esses testes não comprovam a captura física do microfone.
+
+A [verificação complementar de 26/11/2026](evidencias/2026-11-26/README.md) registra a correção do encerramento da sessão, o teste de entrada manual, seis capturas e os limites da tentativa de reconhecimento de voz no emulador.
 
 ## Arquivos principais
 
@@ -77,6 +82,7 @@ O cenário de integração cobre transcrição parcial/definitiva falsa, revisã
 - `lib/overlay.dart`: sobreposição com ditado real e retorno para revisão.
 - `test/`: parser, persistência, serviço falso, widgets e overlay.
 - `integration_test/app_test.dart`: fluxo completo reproduzível no Android.
+- `integration_test/manual_android_test.dart`: entrada manual e revisão no Android.
 - `sql/`: esquema, dados fictícios e consultas independentes.
 - `evidencias/`: logs, banco demonstrativo, CSVs, capturas e vídeo.
 - `docs/Relatorio_Nota2_DynaVoice.md`: relatório editável.

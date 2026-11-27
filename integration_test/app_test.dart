@@ -56,6 +56,7 @@ void main() {
     await tester.ensureVisible(find.byKey(const Key('encerrar_sessao')));
     await tester.tap(find.byKey(const Key('encerrar_sessao')));
     await settle(tester);
+    await waitUntilIdle(tester);
     await tester.tap(find.text('Histórico'));
     await settle(tester);
     expect(find.textContaining('33.5 kgf'), findsOneWidget);
@@ -86,4 +87,18 @@ Future<void> settle(WidgetTester tester) async {
   for (var i = 0; i < 12; i++) {
     await tester.pump(const Duration(milliseconds: 100));
   }
+}
+
+Future<void> waitUntilIdle(WidgetTester tester) async {
+  for (var i = 0; i < 50; i++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pump();
+    final refresh = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.refresh),
+    );
+    if (refresh.onPressed != null) return;
+  }
+  fail('A interface continuou ocupada após encerrar a sessão.');
 }
