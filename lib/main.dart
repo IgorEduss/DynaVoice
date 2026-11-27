@@ -9,6 +9,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'data/database.dart';
 import 'parser_service.dart';
 import 'services/export_service.dart';
+import 'services/overlay_coordinator.dart';
+import 'services/overlay_message_bridge.dart';
 import 'services/speech_recognition_service.dart';
 import 'overlay.dart';
 
@@ -101,6 +103,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   StreamSubscription<dynamic>? _overlay;
   StreamSubscription<SpeechCaptureSnapshot>? _speechSubscription;
   late final SpeechRecognitionService _speech;
+  late final OverlayCoordinator _overlayCoordinator;
   late SpeechCaptureSnapshot _speechSnapshot;
   final _command = TextEditingController();
   DynaDatabase get db => widget.database;
@@ -112,20 +115,37 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         (Platform.isAndroid
             ? DeviceSpeechRecognitionService()
             : UnavailableSpeechRecognitionService());
+    _overlayCoordinator = OverlayCoordinator(
+      speech: _speech,
+      sessionId: () => _sessionId,
+      save: (session, data) async {
+        await db.saveMeasurement(session, data, origin: 'voz');
+        await _refresh();
+      },
+      send: _sendOverlay,
+      close: () async {
+        if (await FlutterOverlayWindow.isActive()) {
+          await FlutterOverlayWindow.closeOverlay().timeout(
+            const Duration(seconds: 2),
+          );
+        }
+      },
+    );
     _speechSnapshot = _speech.current;
     _speechSubscription = _speech.snapshots.listen(_onSpeechSnapshot);
     unawaited(_speech.prepare());
     unawaited(_refresh());
     if (Platform.isAndroid) {
-      _overlay = FlutterOverlayWindow.overlayListener.listen((message) {
-        if (message is String &&
-            message.startsWith('voice:') &&
-            _sessionId != null &&
-            !_reviewing) {
-          final transcript = message.substring(6).trim();
-          _command.text = transcript;
-          unawaited(_review(transcript, origin: 'voz'));
-        }
+      _overlay = OverlayMessageBridge.messages.listen((message) {
+        unawaited(
+          _overlayCoordinator.handle(message).catchError((Object _) {
+            _sendOverlay({
+              'type': 'error',
+              'message':
+                  'Não foi possível concluir a operação. Tente novamente.',
+            });
+          }),
+        );
       });
     }
   }
@@ -142,6 +162,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   void _onSpeechSnapshot(SpeechCaptureSnapshot snapshot) {
     if (!mounted) return;
     setState(() => _speechSnapshot = snapshot);
+    if (_overlayCoordinator.handleSpeech(snapshot)) return;
     if (snapshot.state == SpeechCaptureState.result &&
         snapshot.isFinal &&
         snapshot.transcript.isNotEmpty &&
@@ -150,6 +171,11 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
       _command.text = snapshot.transcript;
       unawaited(_review(snapshot.transcript, origin: 'voz'));
     }
+  }
+
+  void _sendOverlay(Map<String, Object?> event) {
+    if (!Platform.isAndroid) return;
+    OverlayMessageBridge.send(event);
   }
 
   void _notice(String text) {
@@ -247,6 +273,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     if (_sessionId == null) return;
     await db.endSession(_sessionId!);
     _sessionId = null;
+    _overlayCoordinator.reset();
     if (Platform.isAndroid) {
       try {
         if (await FlutterOverlayWindow.isActive()) {
@@ -426,13 +453,16 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         _notice('Autorize a sobreposição nas configurações e toque novamente.');
         return;
       }
+      if (!mounted) return;
+      final bubblePixels = (80 * MediaQuery.devicePixelRatioOf(context))
+          .round();
       await FlutterOverlayWindow.showOverlay(
-        height: 300,
-        width: 340,
+        height: bubblePixels,
+        width: bubblePixels,
         enableDrag: true,
         alignment: OverlayAlignment.centerRight,
         overlayTitle: 'DynaVoice - captura por voz',
-        overlayContent: 'Reconhecimento pt-BR; revisão obrigatória no app',
+        overlayContent: 'Toque na bolha para ditar uma medição.',
       );
     } catch (e) {
       _notice('Não foi possível abrir a sobreposição: $e');

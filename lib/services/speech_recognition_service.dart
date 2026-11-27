@@ -243,6 +243,8 @@ class DeviceSpeechRecognitionService implements SpeechRecognitionService {
     'error_speech_timeout' => 'Nenhuma fala foi detectada a tempo.',
     'error_network' ||
     'error_network_timeout' => 'O serviço de reconhecimento está sem conexão.',
+    'error_server_disconnected' =>
+      'O serviço de voz foi desconectado. Tente novamente ou reabra o DynaVoice.',
     'error_language_not_supported' || 'error_language_unavailable' =>
       'Português brasileiro não está disponível no reconhecedor.',
     'error_busy' => 'O reconhecedor está ocupado. Aguarde e tente novamente.',

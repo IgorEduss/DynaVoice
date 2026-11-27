@@ -27,9 +27,11 @@ O reconhecimento depende do aparelho e do serviço de fala instalado. Alguns dis
 
 ## Sobreposição Android
 
-Depois de autorizar o microfone no aplicativo principal, use **Abrir sobreposição** e conceda a permissão de exibição sobre outros aplicativos. O overlay usa o mesmo serviço real, permite ditar, concluir ou cancelar e devolve somente a transcrição ao DynaVoice. A revisão no aplicativo principal continua obrigatória antes de salvar.
+Depois de autorizar o microfone no aplicativo principal, selecione um paciente fictício, inicie ou retome uma sessão e use **Abrir sobreposição de voz**. Autorize a exibição sobre outros aplicativos quando o Android solicitar. Uma bolha flutuante com microfone aparece na tela; ela pode ser arrastada e permanece sobre outro aplicativo do mesmo aparelho.
 
-Nesta execução, o envio e o cancelamento do overlay foram cobertos por testes automatizados. A validação manual entre aplicativos e versões do Android continua pendente em aparelho físico.
+Toque na bolha para ditar. Ao terminar o reconhecimento, um painel temporário apresenta a frase transcrita e os campos editáveis de articulação, movimento, lado e força. Dados incompletos ou inválidos bloqueiam a confirmação. Somente **Confirmar** grava a medição no banco da sessão; **Fechar** descarta a captura. A frase original permanece registrada mesmo quando um campo é corrigido. Pressionar a bolha por mais tempo permite encerrar o assistente.
+
+O teste manual em um Samsung Android 12 confirmou o ditado e a correção sobre a calculadora, usando dados fictícios. Também houve desconexão do serviço de voz em tentativas anteriores; reabrir o aplicativo permitiu continuar, mas não determina a causa nem garante que o problema não volte. [Roteiro e imagens](evidencias/2026-11-26-celular/README.md).
 
 ## Executar
 
@@ -58,7 +60,7 @@ flutter build apk --debug
 
 As capturas dos testes são gravadas em `build/evidencias/telas/`. Para usar outro diretório, defina a variável de ambiente `DYNAVOICE_EVIDENCIAS`.
 
-Resultados desta revisão:
+Resultados da verificação anterior, registrados antes do teste no aparelho físico:
 
 - análise estática sem apontamentos;
 - 35 testes Dart/Flutter aprovados;
@@ -72,6 +74,8 @@ O cenário de integração cobre transcrição definitiva simulada, revisão, co
 
 A [verificação complementar de 26/11/2026](evidencias/2026-11-26/README.md) registra a correção do encerramento da sessão, o teste de entrada manual, seis capturas e os limites da tentativa de reconhecimento de voz no emulador.
 
+A verificação posterior no aparelho físico incluiu a bolha sobre outro aplicativo, ditado real, correção de força e de articulação, confirmação e consulta dos registros. A análise estática e 38 testes Flutter também passaram. As evidências e os limites constam em [teste no celular](evidencias/2026-11-26-celular/README.md).
+
 ## Arquivos principais
 
 - `lib/main.dart`: atendimento, estados de voz e revisão obrigatória.
@@ -79,23 +83,23 @@ A [verificação complementar de 26/11/2026](evidencias/2026-11-26/README.md) re
 - `lib/parser_service.dart`: entidades, números falados, unidades e ambiguidades.
 - `lib/data/database.dart`: SQLite, migração para esquema v2 e transações.
 - `lib/services/export_service.dart`: exportação JSON.
-- `lib/overlay.dart`: sobreposição com ditado real e retorno para revisão.
+- `lib/overlay.dart`: bolha flutuante e revisão editável sobre outro aplicativo.
+- `lib/services/overlay_coordinator.dart`: comunicação com a sessão e validação antes de gravar.
 - `test/`: parser, persistência, serviço falso, widgets e overlay.
 - `integration_test/app_test.dart`: fluxo completo reproduzível no Android.
 - `integration_test/manual_android_test.dart`: entrada manual e revisão no Android.
 - `sql/`: esquema, dados fictícios e consultas independentes.
 - `evidencias/`: logs, banco demonstrativo, CSVs, capturas e vídeo.
 - `docs/Relatorio_Nota2_DynaVoice.md`: relatório editável.
-- `output/pdf/Relatorio_Nota2_DynaVoice.pdf`: relatório final.
+- `output/pdf/Relatorio_Nota2_DynaVoice.pdf`: relatório de uma versão anterior.
 - `output/apresentacao/DynaVoice_Nota3_Atualizada.pptx`: apresentação atualizada.
 
 `scripts/verificar_sql.py` recria somente `evidencias/dynavoice_demonstracao.db`. O teste Android usa `integration_test.db`, separado do banco normal do aplicativo.
 
 ## Limitações restantes
 
-- Não havia aparelho Android físico conectado nesta execução; portanto, não há evidência atual de microfone real em hardware.
-- O overlay real entre aplicativos ainda precisa de validação manual em aparelho físico.
-- O reconhecedor do Android pode estar indisponível e sua precisão não é garantida.
+- O teste físico ocorreu em um aparelho e sobre a calculadora; o aplicativo real do dinamômetro e outras versões do Android não foram testados.
+- O reconhecedor do Android pode ficar indisponível ou ser desconectado; sua precisão não é garantida e não foi feito teste controlado sem internet.
 - O parser usa vocabulário controlado; campos ausentes ou ambíguos exigem correção humana.
 - Não há autenticação, criptografia, backup ou sincronização.
 - Não houve validação clínica, regulatória, de acessibilidade, desempenho ou uso com dados reais.
